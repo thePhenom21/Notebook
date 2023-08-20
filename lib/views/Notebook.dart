@@ -10,6 +10,21 @@ class Notebook extends StatefulWidget {
 }
 
 class _NotebookState extends State<Notebook> {
+  List<Note> notes = [];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getNotes("can").then((value) {
+      for (dynamic val in value.data) {
+        setState(() {
+          notes.add(Note(val["id"], val["title"], val["text"], val["userId"]));
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,7 +33,11 @@ class _NotebookState extends State<Notebook> {
           SizedBox(
               width: MediaQuery.of(context).size.width / 4,
               height: MediaQuery.of(context).size.height,
-              child: Placeholder()),
+              child: ListView.builder(
+                  itemBuilder: (context, index) {
+                    return Text(notes[index].text!);
+                  },
+                  itemCount: notes.length)),
           Column(
             children: [
               SizedBox(
@@ -91,8 +110,11 @@ createNote(String id, String title, String text, String userId) async {
   await Dio().post("localhost:8080/createNote/$id/$userId/$title", data: text);
 }
 
-Future<List<Note>> getNotes(String userId) async {
-  return await Dio()
-      .get("localhost:8080/notes/$userId")
-      .then((value) => value.data);
+Future<Response<dynamic>> getNotes(String userId) async {
+  try {
+    return await Dio().get('http://localhost:8080/notes/$userId');
+  } catch (e) {
+    print("EEEERRROR: ${e.toString()}");
+  }
+  return Future.error("");
 }
