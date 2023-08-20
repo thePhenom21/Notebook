@@ -45,7 +45,10 @@ class _NotebookState extends State<Notebook> {
                       child: ElevatedButton(
                           onPressed: () {
                             setState(() {
-                              currentNote = notes[index];
+                              currentNote!.id = notes[index].id;
+                              currentNote!.text = notes[index].text;
+                              currentNote!.title = notes[index].title;
+                              currentNote!.userId = notes[index].userId;
                               titleController.value =
                                   TextEditingValue(text: currentNote!.title!);
                               textController.value =
@@ -103,10 +106,11 @@ class _NotebookState extends State<Notebook> {
             child: FloatingActionButton.small(
               onPressed: () {
                 setState(() {
-                  Note currentNote = Note("$id", "", "", "can");
-                  notes.add(currentNote);
                   titleController.value = TextEditingValue(text: "");
-                  titleController.value = TextEditingValue(text: "");
+                  textController.value = TextEditingValue(text: "");
+                  currentNote!.text = "";
+                  currentNote!.title = "";
+                  currentNote!.id = "$id";
                 });
               },
               child: Icon(Icons.add),
@@ -115,7 +119,25 @@ class _NotebookState extends State<Notebook> {
           Padding(
             padding: const EdgeInsets.all(5.0),
             child: FloatingActionButton.small(
-              onPressed: () {},
+              onPressed: () async {
+                await deleteNote(currentNote!.id);
+                titleController.value = TextEditingValue(text: "");
+                textController.value = TextEditingValue(text: "");
+                currentNote!.text = "";
+                currentNote!.title = "";
+                currentNote!.id = "$id";
+                setState(() {
+                  notes = [];
+                });
+                await getNotes("can").then((value) {
+                  for (dynamic val in value.data) {
+                    setState(() {
+                      notes.add(Note(
+                          val["id"], val["title"], val["text"], val["userId"]));
+                    });
+                  }
+                });
+              },
               child: Icon(Icons.remove),
             ),
           ),
@@ -124,10 +146,11 @@ class _NotebookState extends State<Notebook> {
             child: FloatingActionButton.small(
               onPressed: () async {
                 await createNote(
-                    "${currentNote!.id!}",
+                    "${currentNote!.id}",
                     titleController.value.text,
                     textController.value.text,
                     "can");
+                id++;
                 setState(() {
                   notes = [];
                 });
@@ -153,6 +176,14 @@ createNote(String id, String title, String text, String userId) async {
   try {
     await Dio().post("http://localhost:8080/createNote/$id/$userId/$title",
         data: text);
+  } catch (e) {
+    print(e);
+  }
+}
+
+deleteNote(String id) async {
+  try {
+    await Dio().post("http://localhost:8080/deleteNote/$id");
   } catch (e) {
     print(e);
   }
