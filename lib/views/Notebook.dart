@@ -1,4 +1,6 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:notebook/model/Note.dart';
 
 class Notebook extends StatefulWidget {
   const Notebook({super.key});
@@ -39,4 +41,9 @@ class _NotebookState extends State<Notebook> {
       ),
     );
   }
+}
+
+createNote(String id, String title, String text, String userId) async {
+  Note note = Note(id, text, title, userId);
+  Dio().post("localhost:8080/createNote/$id/$userId/$title", data: text);
 }
