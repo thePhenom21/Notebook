@@ -10,7 +10,11 @@ class Notebook extends StatefulWidget {
 }
 
 class _NotebookState extends State<Notebook> {
+  int id = 0;
   List<Note> notes = [];
+  Note? currentNote = Note("", "", "", "");
+  TextEditingController titleController = TextEditingController();
+  TextEditingController textController = TextEditingController();
 
   @override
   void initState() {
@@ -20,6 +24,7 @@ class _NotebookState extends State<Notebook> {
       for (dynamic val in value.data) {
         setState(() {
           notes.add(Note(val["id"], val["title"], val["text"], val["userId"]));
+          id++;
         });
       }
     });
@@ -35,7 +40,20 @@ class _NotebookState extends State<Notebook> {
               height: MediaQuery.of(context).size.height,
               child: ListView.builder(
                   itemBuilder: (context, index) {
-                    return Text(notes[index].text!);
+                    return Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              currentNote = notes[index];
+                              titleController.value =
+                                  TextEditingValue(text: currentNote!.title!);
+                              textController.value =
+                                  TextEditingValue(text: currentNote!.text!);
+                            });
+                          },
+                          child: Text(notes[index].title!)),
+                    );
                   },
                   itemCount: notes.length)),
           Column(
@@ -45,6 +63,7 @@ class _NotebookState extends State<Notebook> {
                   padding: const EdgeInsets.only(
                       top: 5.0, left: 5.0, right: 5.0, bottom: 10),
                   child: TextField(
+                    controller: titleController,
                     mouseCursor: MouseCursor.uncontrolled,
                     textAlignVertical: TextAlignVertical.top,
                     minLines: 1,
@@ -60,6 +79,7 @@ class _NotebookState extends State<Notebook> {
                   padding:
                       const EdgeInsets.only(left: 5.0, right: 5.0, bottom: 5.0),
                   child: TextField(
+                    controller: textController,
                     mouseCursor: MouseCursor.uncontrolled,
                     textAlignVertical: TextAlignVertical.top,
                     expands: true,
@@ -81,7 +101,14 @@ class _NotebookState extends State<Notebook> {
           Padding(
             padding: const EdgeInsets.all(5.0),
             child: FloatingActionButton.small(
-              onPressed: () {},
+              onPressed: () {
+                setState(() {
+                  Note currentNote = Note("$id", "", "", "can");
+                  notes.add(currentNote);
+                  titleController.value = TextEditingValue(text: "");
+                  titleController.value = TextEditingValue(text: "");
+                });
+              },
               child: Icon(Icons.add),
             ),
           ),
@@ -95,7 +122,24 @@ class _NotebookState extends State<Notebook> {
           Padding(
             padding: const EdgeInsets.all(5.0),
             child: FloatingActionButton.small(
-              onPressed: () {},
+              onPressed: () async {
+                await createNote(
+                    "${currentNote!.id!}",
+                    titleController.value.text,
+                    textController.value.text,
+                    "can");
+                setState(() {
+                  notes = [];
+                });
+                await getNotes("can").then((value) {
+                  for (dynamic val in value.data) {
+                    setState(() {
+                      notes.add(Note(
+                          val["id"], val["title"], val["text"], val["userId"]));
+                    });
+                  }
+                });
+              },
               child: Icon(Icons.save),
             ),
           )
@@ -106,8 +150,12 @@ class _NotebookState extends State<Notebook> {
 }
 
 createNote(String id, String title, String text, String userId) async {
-  Note note = Note(id, text, title, userId);
-  await Dio().post("localhost:8080/createNote/$id/$userId/$title", data: text);
+  try {
+    await Dio().post("http://localhost:8080/createNote/$id/$userId/$title",
+        data: text);
+  } catch (e) {
+    print(e);
+  }
 }
 
 Future<Response<dynamic>> getNotes(String userId) async {

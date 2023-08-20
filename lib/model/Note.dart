@@ -4,5 +4,5 @@ class Note {
   String? text;
   String? userId;
 
-  Note(this.id, this.text, this.title, this.userId);
+  Note(this.id, this.title, this.text, this.userId);
 }
