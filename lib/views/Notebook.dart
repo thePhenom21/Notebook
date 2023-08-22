@@ -178,7 +178,7 @@ class _NotebookState extends State<Notebook> {
 
 createNote(String id, String title, String text, String userId) async {
   try {
-    await Dio().post("http://localhost:8080/createNote/$id/$userId/$title",
+    await Dio().post("http://16.171.135.195:8080/createNote/$id/$userId/$title",
         data: text);
   } catch (e) {
     print(e);
@@ -187,7 +187,7 @@ createNote(String id, String title, String text, String userId) async {
 
 deleteNote(String id) async {
   try {
-    await Dio().post("http://localhost:8080/deleteNote/$id");
+    await Dio().post("http://16.171.135.195:8080/deleteNote/$id");
   } catch (e) {
     print(e);
   }
@@ -195,7 +195,7 @@ deleteNote(String id) async {
 
 Future<Response<dynamic>> getNotes(String userId) async {
   try {
-    return await Dio().get('http://localhost:8080/notes/$userId');
+    return await Dio().get('http://16.171.135.195:8080/notes/$userId');
   } catch (e) {
     print("EEEERRROR: ${e.toString()}");
   }

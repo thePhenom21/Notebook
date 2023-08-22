@@ -84,7 +84,7 @@ Future<String?> login(String username, String password) async {
   String payload = passEncode(password);
   try {
     return await Dio()
-        .post("http://localhost:8081/login/$username/$payload")
+        .post("http://16.171.135.195:8081/login/$username/$payload")
         .then((value) => value.data);
   } catch (err) {
     return null;
@@ -95,7 +95,7 @@ register(String username, String password) async {
   String payload = passEncode(password);
   try {
     return Dio()
-        .post("http://localhost:8081/register/$username/$payload")
+        .post("http://16.171.135.195:8081/register/$username/$payload")
         .then((value) => value.data);
   } catch (err) {
     return null;
