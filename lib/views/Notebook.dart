@@ -1,9 +1,13 @@
+import 'package:binary/binary.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:notebook/model/Note.dart';
 
+String user = "";
+
 class Notebook extends StatefulWidget {
-  const Notebook({super.key});
+  String username = "";
+  Notebook({super.key, required this.username});
 
   @override
   State<Notebook> createState() => _NotebookState();
@@ -20,7 +24,7 @@ class _NotebookState extends State<Notebook> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    getNotes("can").then((value) {
+    getNotes("${widget.username}").then((value) {
       for (dynamic val in value.data) {
         setState(() {
           notes.add(Note(val["id"], val["title"], val["text"], val["userId"]));
@@ -129,7 +133,7 @@ class _NotebookState extends State<Notebook> {
                 setState(() {
                   notes = [];
                 });
-                await getNotes("can").then((value) {
+                await getNotes("${widget.username}").then((value) {
                   for (dynamic val in value.data) {
                     setState(() {
                       notes.add(Note(
@@ -149,12 +153,12 @@ class _NotebookState extends State<Notebook> {
                     "${currentNote!.id}",
                     titleController.value.text,
                     textController.value.text,
-                    "can");
+                    "${widget.username}");
                 id++;
                 setState(() {
                   notes = [];
                 });
-                await getNotes("can").then((value) {
+                await getNotes("${widget.username}").then((value) {
                   for (dynamic val in value.data) {
                     setState(() {
                       notes.add(Note(
