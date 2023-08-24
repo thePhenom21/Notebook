@@ -1,16 +1,19 @@
-import 'package:dio/dio.dart';
+import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
-import 'package:binary/binary.dart';
 import 'package:notebook/views/Notebook.dart';
+import 'package:appwrite/appwrite.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
+  String errorMessage = "";
+  int errorType = 0;
   TextEditingController usernameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
 
@@ -43,34 +46,55 @@ class _LoginPageState extends State<LoginPage> {
                     padding: const EdgeInsets.all(5.0),
                     child: ElevatedButton(
                         onPressed: () async {
-                          username = await login(usernameController.value.text,
-                              passwordController.value.text);
-                          if (username == "") {
-                            print("No user found");
-                          } else {
-                            usernameController.clear();
-                            passwordController.clear();
+                          try {
+                            UserCredential session = await login(
+                                usernameController.value.text,
+                                passwordController.value.text);
+                            username = usernameController.value.text;
+                            setState(() {
+                              errorType = 1;
+                              errorMessage = "Login Succesful!";
+                            });
+                            await Future.delayed(Duration(seconds: 2));
                             Navigator.push(context, MaterialPageRoute(
                                 builder: (BuildContext context) {
                               return Notebook(username: username!);
                             }));
+                          } on FirebaseAuthException catch (err) {
+                            setState(() {
+                              errorType = 0;
+                              errorMessage = err.message.toString();
+                            });
                           }
                         },
                         child: Text("Login")),
                   ),
                   ElevatedButton(
                       onPressed: () async {
-                        username = await register(usernameController.value.text,
-                            passwordController.value.text);
-                        if (username != null) {
+                        try {
+                          UserCredential newUser = await register(
+                              usernameController.value.text,
+                              passwordController.value.text);
+                          setState(() {
+                            errorType = 1;
+                            errorMessage = "Succesfully created new user";
+                          });
                           usernameController.clear();
                           passwordController.clear();
+                        } on FirebaseAuthException catch (err) {
+                          setState(() {
+                            errorType = 0;
+                            errorMessage = err.message.toString();
+                          });
                         }
                       },
                       child: Text("Register"))
                 ],
               ),
-            )
+            ),
+            Text(errorMessage,
+                style: TextStyle(
+                    color: errorType == 0 ? Colors.red : Colors.green))
           ],
         ),
       )),
@@ -78,34 +102,13 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-Future<String?> login(String username, String password) async {
-  String payload = passEncode(password);
-  try {
-    return await Dio()
-        .post("http://16.171.135.195:8081/login/$username/$payload")
-        .then((value) => value.data);
-  } catch (err) {
-    return null;
-  }
+Future<UserCredential> login(String username, String password) async {
+  return await FirebaseAuth.instance
+      .signInWithEmailAndPassword(email: username, password: password);
 }
 
-register(String username, String password) async {
-  String payload = passEncode(password);
-  try {
-    return Dio()
-        .post("http://16.171.135.195:8081/register/$username/$payload")
-        .then((value) => value.data);
-  } catch (err) {
-    return null;
-  }
-}
-
-passEncode(String password) {
-  String pass_secret = password;
-  String payload = "";
-  for (int i in pass_secret.runes) {
-    payload += "${i.rotateRightShift(20, 32)}k";
-  }
-  print("Payload: $payload");
-  return payload;
+Future<UserCredential> register(String username, String password) async {
+  UserCredential user = await FirebaseAuth.instance
+      .createUserWithEmailAndPassword(email: username, password: password);
+  return user;
 }

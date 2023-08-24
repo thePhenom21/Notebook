@@ -1,6 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:notebook/model/Note.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 String user = "";
 
@@ -24,7 +24,7 @@ class _NotebookState extends State<Notebook> {
     // TODO: implement initState
     super.initState();
     getNotes("${widget.username}").then((value) {
-      for (dynamic val in value.data) {
+      for (dynamic val in value) {
         setState(() {
           notes.add(Note(val["id"], val["title"], val["text"], val["userId"]));
           id++;
@@ -114,6 +114,7 @@ class _NotebookState extends State<Notebook> {
                   currentNote!.text = "";
                   currentNote!.title = "";
                   currentNote!.id = "$id";
+                  id++;
                 });
               },
               child: Icon(Icons.add),
@@ -133,7 +134,7 @@ class _NotebookState extends State<Notebook> {
                   notes = [];
                 });
                 await getNotes("${widget.username}").then((value) {
-                  for (dynamic val in value.data) {
+                  for (dynamic val in value) {
                     setState(() {
                       notes.add(Note(
                           val["id"], val["title"], val["text"], val["userId"]));
@@ -148,17 +149,21 @@ class _NotebookState extends State<Notebook> {
             padding: const EdgeInsets.all(5.0),
             child: FloatingActionButton.small(
               onPressed: () async {
-                await createNote(
-                    "${currentNote!.id}",
-                    titleController.value.text,
-                    textController.value.text,
-                    "${widget.username}");
-                id++;
                 setState(() {
+                  id++;
+                });
+                await createNote(
+                  "${currentNote!.id}",
+                  titleController.value.text,
+                  textController.value.text,
+                  "${widget.username}",
+                );
+                setState(() {
+                  id++;
                   notes = [];
                 });
                 await getNotes("${widget.username}").then((value) {
-                  for (dynamic val in value.data) {
+                  for (dynamic val in value) {
                     setState(() {
                       notes.add(Note(
                           val["id"], val["title"], val["text"], val["userId"]));
@@ -176,27 +181,38 @@ class _NotebookState extends State<Notebook> {
 }
 
 createNote(String id, String title, String text, String userId) async {
+  final db = FirebaseFirestore.instance;
   try {
-    await Dio().post("http://16.171.135.195:8080/createNote/$id/$userId/$title",
-        data: text);
-  } catch (e) {
-    print(e);
+    db
+        .collection("notes")
+        .add({"id": id, "title": title, "text": text, "userId": userId});
+  } catch (err) {
+    print(err);
   }
 }
 
 deleteNote(String id) async {
+  final db = FirebaseFirestore.instance;
   try {
-    await Dio().post("http://16.171.135.195:8080/deleteNote/$id");
-  } catch (e) {
-    print(e);
+    QuerySnapshot query =
+        await db.collection("notes").where("id", isEqualTo: id).get();
+    for (QueryDocumentSnapshot a in query.docs) {
+      db.collection("notes").doc(a.id).delete();
+    }
+  } catch (err) {
+    print(err);
   }
 }
 
-Future<Response<dynamic>> getNotes(String userId) async {
+getNotes(String userId) async {
+  final db = FirebaseFirestore.instance;
   try {
-    return await Dio().get('http://16.171.135.195:8080/notes/$userId');
+    return await db
+        .collection("notes")
+        .where("userId", isEqualTo: userId)
+        .get()
+        .then((value) => value.docs);
   } catch (e) {
-    print("EEEERRROR: ${e.toString()}");
+    print(e);
   }
-  return Future.error("");
 }
